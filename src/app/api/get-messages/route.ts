@@ -1,6 +1,5 @@
 import dbConnect from '@/lib/dbConnect';
 import UserModel from '@/model/User';
-import mongoose from 'mongoose';
 import { User } from 'next-auth';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/options';
@@ -16,28 +15,32 @@ export async function GET(request: Request) {
       { status: 401 }
     );
   }
-  const userId = new mongoose.Types.ObjectId(_user._id);
-  try {
-    const user = await UserModel.aggregate([
-      { $match: { _id: userId } },
-      { $unwind: '$messages' },
-      { $sort: { 'messages.createdAt': -1 } },
-      { $group: { _id: '$_id', messages: { $push: '$messages' } } },
-    ]).exec();
 
-    if (!user || user.length === 0) {
+  // Use the user's ID directly from the session
+  const userId = _user._id;
+
+  try {
+    // Find the user by their ID using a simpler findById query
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      // This will now only trigger if the user truly doesn't exist in the DB
       return Response.json(
         { message: 'User not found', success: false },
         { status: 404 }
       );
     }
 
+    // Return the user's messages array (it can be empty, which is correct)
     return Response.json(
-      { messages: user[0].messages },
-      {
-        status: 200,
-      }
-    );
+        {
+          messages: user.messages,
+        },
+        {
+          status: 200,
+        }
+      );
+
   } catch (error) {
     console.error('An unexpected error occurred:', error);
     return Response.json(

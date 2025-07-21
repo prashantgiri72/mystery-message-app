@@ -1,5 +1,5 @@
-import dbConnect from '@/lib/dbConnect';
-import UserModel from '@/model/User';
+import dbConnect from "@/lib/dbConnect";
+import UserModel from "@/model/User";
 
 export async function POST(request: Request) {
   // Connect to the database
@@ -8,11 +8,16 @@ export async function POST(request: Request) {
   try {
     const { username, code } = await request.json();
     const decodedUsername = decodeURIComponent(username);
-    const user = await UserModel.findOne({ username: decodedUsername });
+
+    // Find user case-insensitively
+    // YAHAN BADLAAV KIYA GAYA HAI
+    const user = await UserModel.findOne({
+      username: { $regex: new RegExp(`^${decodedUsername}$`, "i") },
+    });
 
     if (!user) {
       return Response.json(
-        { success: false, message: 'User not found' },
+        { success: false, message: "User not found" },
         { status: 404 }
       );
     }
@@ -27,7 +32,7 @@ export async function POST(request: Request) {
       await user.save();
 
       return Response.json(
-        { success: true, message: 'Account verified successfully' },
+        { success: true, message: "Account verified successfully" },
         { status: 200 }
       );
     } else if (!isCodeNotExpired) {
@@ -36,21 +41,21 @@ export async function POST(request: Request) {
         {
           success: false,
           message:
-            'Verification code has expired. Please sign up again to get a new code.',
+            "Verification code has expired. Please sign up again to get a new code.",
         },
         { status: 400 }
       );
     } else {
       // Code is incorrect
       return Response.json(
-        { success: false, message: 'Incorrect verification code' },
+        { success: false, message: "Incorrect verification code" },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error('Error verifying user:', error);
+    console.error("Error verifying user:", error);
     return Response.json(
-      { success: false, message: 'Error verifying user' },
+      { success: false, message: "Error verifying user" },
       { status: 500 }
     );
   }
