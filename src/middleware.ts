@@ -35,5 +35,7 @@ export const config = {
     '/sign-up',
     '/',
     '/verify/:path*',
+
+    
   ],
 };
